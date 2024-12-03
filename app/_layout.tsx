@@ -23,6 +23,7 @@ import SalirScreen from './Salir';
 import Home from './Home';
 import Login from './Login';
 import Registrate from './Registrate';
+import ResetPassword from './ResetPassword';
 import { AuthProvider, useAuth } from './AuthContext';
 import PreseleccionarMateria from './PreseleccionarMateria';
 const Drawer = createDrawerNavigator();
@@ -174,6 +175,8 @@ function AppNavigator() {
         <Stack.Navigator>
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Registrate" component={Registrate} />
+          <Stack.Screen name="ResetPassword" component={ResetPassword} />
+
         </Stack.Navigator>
       )}
       <StatusBar style="auto" />

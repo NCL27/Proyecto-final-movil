@@ -1,30 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert } from 'react-native';
-import { useAuth } from './AuthContext'; // Asegúrate de importar el contexto
-import { WebView } from 'react-native-webview'; // Usamos WebView para incrustar el iframe de YouTube
-import { ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useAuth } from './AuthContext';
+import WebView from 'react-native-webview';
 
 const Videos = () => {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedVideo, setSelectedVideo] = useState(null); // Video seleccionado para mostrar
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
-  const { authToken } = useAuth(); // Obtener el token del contexto de autenticación
+  const { authToken } = useAuth();
 
   useEffect(() => {
-    // Función para obtener los videos
     const fetchVideos = async () => {
       try {
         const response = await fetch('https://uasdapi.ia3x.com/videos', {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${authToken}`, // Enviar el authToken en el header
+            Authorization: `Bearer ${authToken}`,
             'Content-Type': 'application/json',
           },
         });
         const data = await response.json();
         if (Array.isArray(data)) {
-          setVideos(data); // Establecer los videos
+          setVideos(data);
+        } else {
+          Alert.alert('Error', 'Formato de datos incorrecto.');
         }
       } catch (error) {
         Alert.alert('Error', 'No se pudieron cargar los videos.');
@@ -33,18 +33,15 @@ const Videos = () => {
       }
     };
 
-    fetchVideos(); // Llamada a la API
+    fetchVideos();
   }, [authToken]);
 
-  // Función para renderizar cada video de la lista
-  const renderVideo = ({ item }) => {
-    return (
-      <View style={styles.videoCard} onTouchEnd={() => setSelectedVideo(item)}>
-        <Text style={styles.titulo}>{item.titulo}</Text>
-        <Text style={styles.fecha}>{new Date(item.fechaPublicacion).toLocaleString()}</Text>
-      </View>
-    );
-  };
+  const renderVideo = ({ item }) => (
+    <View style={styles.videoCard} onTouchEnd={() => setSelectedVideo(item)}>
+      <Text style={styles.titulo}>{item.titulo}</Text>
+      <Text style={styles.fecha}>{new Date(item.fechaPublicacion).toLocaleString()}</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -62,9 +59,11 @@ const Videos = () => {
               <Text style={styles.videoTitle}>{selectedVideo.titulo}</Text>
               <WebView
                 source={{
-                  uri: `https://www.youtube.com/embed/${selectedVideo.url}`, // URL de video con embed
+                  uri: `https://www.youtube.com/embed/${selectedVideo.url}`,
                 }}
                 style={styles.webView}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
               />
             </View>
           )}

@@ -1,159 +1,151 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TextInput,
-    Alert,
-    TouchableOpacity,
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  Alert,
+  FlatList,
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { useAuth } from './AuthContext';
-import { ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CrearSolicitudes = ({ navigation }: any) => {
-    const [tiposSolicitudes, setTiposSolicitudes] = useState<any[]>([]);
-    const [selectedTipo, setSelectedTipo] = useState<string | null>(null);
-    const [descripcion, setDescripcion] = useState('');
-    const [loading, setLoading] = useState(false);
-    const { authToken } = useAuth();
+const SolicitudesScreen = () => {
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [selectedSolicitud, setSelectedSolicitud] = useState(null);
 
-    // Cargar los tipos de solicitudes desde el endpoint
-    useEffect(() => {
-        const fetchTiposSolicitudes = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch('https://uasdapi.ia3x.com/tipos_solicitudes', {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
+  // Obtener el token de autorización
+  const getAuthToken = async () => {
+    return await AsyncStorage.getItem('@auth_token');
+  };
 
-                const data = await response.json();
-                if (data.success && Array.isArray(data.data)) {
-                    setTiposSolicitudes(data.data);
-                } else {
-                    Alert.alert('Error', 'No se pudieron cargar los tipos de solicitudes.');
-                }
-            } catch (error) {
-                Alert.alert('Error', 'Hubo un problema al cargar los tipos de solicitudes.');
-            } finally {
-                setLoading(false);
-            }
-        };
+  // Obtener los tipos de solicitudes desde el servidor
+  const fetchSolicitudes = async () => {
+    const token = await getAuthToken();
+    try {
+      const response = await fetch('https://uasdapi.ia3x.com/tipos_solicitudes', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        fetchTiposSolicitudes();
-    }, [authToken]);
+      const data = await response.json();
 
-    const enviarSolicitud = async () => {
-        if (!selectedTipo || !descripcion.trim()) {
-            Alert.alert('Error', 'Debes seleccionar un tipo de solicitud y llenar la descripción.');
-            return;
-        }
+      if (data.success) {
+        setSolicitudes(data.data);
+      } else {
+        Alert.alert('Error', data.message || 'No se pudieron cargar las solicitudes');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo conectar con el servidor');
+    }
+  };
 
-        try {
-            const response = await fetch('https://uasdapi.ia3x.com/crear_solicitud', {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${authToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    tipo: selectedTipo,
-                    descripcion: descripcion.trim(),
-                }),
-            });
+  // Manejar la selección de una solicitud
+  const handleSelectSolicitud = (solicitud) => {
+    setSelectedSolicitud({
+      tipo: solicitud.codigo,
+      descripcion: solicitud.descripcion,
+    });
+  };
 
-            const data = await response.json();
-            if (response.ok && data.success) {
-                Alert.alert('Éxito', 'La solicitud fue creada exitosamente.');
-                navigation.navigate('Solicitudes');
-            } else {
-                Alert.alert('Error', data.message || 'No se pudo crear la solicitud.');
-            }
-        } catch (error) {
-            Alert.alert('Error', 'Hubo un problema al enviar la solicitud.');
-        }
-    };
+  // Enviar la solicitud seleccionada
+  const handleGuardar = async () => {
+    if (!selectedSolicitud) {
+      Alert.alert('Error', 'Por favor selecciona una solicitud');
+      return;
+    }
 
-    return (
-        <View style={styles.container}>
-            {loading ? (
-                <ActivityIndicator size="large" color="#0000ff" />
-            ) : (
-                <>
-                    <Text style={styles.label}>Tipo de Solicitud</Text>
-                    <Picker
-                        selectedValue={selectedTipo}
-                        style={styles.picker}
-                        onValueChange={(itemValue) => setSelectedTipo(itemValue)}
-                    >
-                        <Picker.Item label="Seleccione un tipo" value={null} />
-                        {tiposSolicitudes.map((tipo) => (
-                            <Picker.Item key={tipo.codigo} label={tipo.descripcion} value={tipo.codigo} />
-                        ))}
-                    </Picker>
+    const token = await getAuthToken();
+    try {
+      const response = await fetch('https://uasdapi.ia3x.com/crear_solicitud', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(selectedSolicitud),
+      });
 
-                    <Text style={styles.label}>Descripción</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        placeholder="Escribe la descripción"
-                        multiline
-                        value={descripcion}
-                        onChangeText={setDescripcion}
-                    />
+      const data = await response.json();
 
-                    <TouchableOpacity style={styles.enviarButton} onPress={enviarSolicitud}>
-                        <Text style={styles.enviarButtonText}>Enviar Solicitud</Text>
-                    </TouchableOpacity>
-                </>
-            )}
-        </View>
-    );
+      if (data.success) {
+        Alert.alert('Éxito', 'La solicitud se ha creado correctamente');
+        setSelectedSolicitud(null);
+      } else {
+        Alert.alert('Error', data.message || 'No se pudo crear la solicitud');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo conectar con el servidor');
+    }
+  };
+
+  useEffect(() => {
+    fetchSolicitudes();
+  }, []);
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Selecciona una Solicitud</Text>
+
+      {solicitudes.length > 0 ? (
+        <FlatList
+          data={solicitudes}
+          keyExtractor={(item) => item.codigo.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.solicitudItem,
+                selectedSolicitud?.tipo === item.codigo && styles.selectedItem,
+              ]}
+              onPress={() => handleSelectSolicitud(item)}
+            >
+              <Text style={styles.solicitudText}>{item.descripcion}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      ) : (
+        <Text style={styles.loadingText}>Cargando solicitudes...</Text>
+      )}
+
+      <Button title="Guardar" onPress={handleGuardar} />
+    </ScrollView>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#fff',
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    picker: {
-        height: 50,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        backgroundColor: '#f9f9f9',
-    },
-    textInput: {
-        height: 100,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        backgroundColor: '#f9f9f9',
-        padding: 10,
-        textAlignVertical: 'top',
-        marginBottom: 20,
-    },
-    enviarButton: {
-        padding: 15,
-        backgroundColor: '#007bff',
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    enviarButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  solicitudItem: {
+    padding: 15,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  selectedItem: {
+    backgroundColor: '#cce5ff',
+    borderColor: '#007bff',
+  },
+  solicitudText: {
+    fontSize: 16,
+  },
+  loadingText: {
+    textAlign: 'center',
+    fontSize: 16,
+    marginTop: 20,
+  },
 });
 
-export default CrearSolicitudes;
+export default SolicitudesScreen;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from './AuthContext';  // Usamos el hook para acceder al contexto
+import { useAuth } from './AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { Link } from 'expo-router';
 
@@ -29,12 +29,11 @@ const Login = () => {
       const jsonResponse = await response.json();
 
       if (response.ok) {
-        const { authToken } = jsonResponse.data; // Extrae el token desde la respuesta
-        await AsyncStorage.setItem('@auth_token', authToken); // Guarda el token en AsyncStorage
+        const { authToken } = jsonResponse.data;
+        await AsyncStorage.setItem('@auth_token', authToken);
         await login();  
         Alert.alert('Inicio de sesión exitoso', 'Sesión iniciada correctamente');
         console.log('Token de autenticación:', authToken);
-        
       } else {
         Alert.alert('Error', jsonResponse.message || 'Inicio de sesión fallido');
       }
@@ -47,22 +46,32 @@ const Login = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Iniciar Sesión</Text>
+
       <TextInput
         style={styles.input}
         placeholder="Usuario"
         value={username}
         onChangeText={setUsername}
+        placeholderTextColor="#a0a0a0"
       />
+
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        placeholderTextColor="#a0a0a0"
       />
-      <Button title="Iniciar Sesión" onPress={handleLogin} />
-      <Link href="/Registrate">Registrate !</Link>
-      
+
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Iniciar Sesión</Text>
+      </TouchableOpacity>
+
+      <View style={styles.linksContainer}>
+        <Link href="/Registrate" style={styles.link}>Registrate!</Link>
+        <Link href="/ResetPassword" style={styles.link}>Olvidé mi contraseña</Link>
+      </View>
     </View>
   );
 };
@@ -71,23 +80,52 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff', // Fondo blanco
   },
   title: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 20,
+    color: '#333',
+    marginBottom: 30,
   },
   input: {
     height: 50,
+    width: '100%',
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 15,
-    backgroundColor: '#fff',
+    paddingHorizontal: 15,
+    marginBottom: 20,
+    backgroundColor: '#f9f9f9',
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: '#007bff',
+    width: '100%',
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  linksContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+    marginTop: 10,
+  },
+  link: {
+    fontSize: 16,
+    color: '#007bff',
+    marginHorizontal: 10,
+    textDecorationLine: 'underline',
   },
 });
 
