@@ -23,9 +23,12 @@ import SalirScreen from './Salir';
 import Home from './Home';
 import Login from './Login';
 import Registrate from './Registrate';
-import { AuthProvider, useAuth } from './AuthContext'; 
+import { AuthProvider, useAuth } from './AuthContext';
+import PreseleccionarMateria from './PreseleccionarMateria';
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();  // Creamos el Stack Navigator
+import * as Notifications from 'expo-notifications';
+import { Alert } from 'react-native';
 
 // var isLogged: boolean = false;
 SplashScreen.preventAutoHideAsync();
@@ -39,13 +42,24 @@ const App = () => {
 };
 
 
- function AppNavigator() {
+function AppNavigator() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   const { isLogged, checkSession } = useAuth();
+
+  useEffect(() => {
+    const obtenerPermisos = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'No se pueden mostrar notificaciones sin permisos.');
+      }
+    };
+  
+    obtenerPermisos();
+  }, []);
 
   useEffect(() => {
     checkSession();  // Verificar si hay sesión cuando la app se monta
@@ -71,7 +85,7 @@ const App = () => {
             options={{
               title: 'Home',
             }}
-          />          
+          />
           <Drawer.Screen
             name="Noticias"
             component={Noticias}
@@ -93,6 +107,11 @@ const App = () => {
               title: 'Preselección',
             }}
           />
+          <Drawer.Screen name="PreseleccionarMateria"
+            component={PreseleccionarMateria}
+            options={{
+              drawerItemStyle: { display: 'none' },
+            }} />
           <Drawer.Screen
             name="Deuda"
             component={Deuda}
@@ -145,12 +164,12 @@ const App = () => {
         </Drawer.Navigator>
       ) : (
         <Stack.Navigator>
-        <Stack.Screen name="Login" component={Login} />
-        <Stack.Screen name="Registrate" component={Registrate} />
-      </Stack.Navigator>
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Registrate" component={Registrate} />
+        </Stack.Navigator>
       )}
       <StatusBar style="auto" />
-      </ThemeProvider>
+    </ThemeProvider>
   );
 }
 
