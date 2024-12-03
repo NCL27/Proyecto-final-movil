@@ -12,7 +12,7 @@ import {
 import { useAuth } from './AuthContext';
 import { ActivityIndicator } from 'react-native';
 
-const PreseleccionarMateria = () => {
+const PreseleccionarMateria = ({ navigation }: any) => {
     const [preseleccion, setPreseleccion] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedPreseleccion, setSelectedPreseleccion] = useState<any | null>(null);
@@ -74,8 +74,10 @@ const PreseleccionarMateria = () => {
 
             if (response.ok && data.success) {
                 Alert.alert('Éxito', `La materia "${materia.nombre}" fue preseleccionada exitosamente.`);
+                navigation.navigate('Preseleccion');
             } else if (data.error === "La materia ya está preseleccionada") {
                 Alert.alert('Atención', 'La materia ya ha sido preseleccionada.');
+                navigation.navigate('Preseleccion');
             } else {
                 Alert.alert('Error', data.message || 'No se pudo preseleccionar la materia.');
             }

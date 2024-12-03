@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, Button } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useAuth } from './AuthContext';
 import MapView, { Marker } from 'react-native-maps';
-import { ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 const Preseleccion = () => {
   const [preseleccion, setPreseleccion] = useState<any[]>([]);
@@ -11,89 +18,112 @@ const Preseleccion = () => {
   const [selectedPreseleccion, setSelectedPreseleccion] = useState<any | null>(null);
   const { authToken } = useAuth();
   const navigation = useNavigation();
-  useEffect(() => {
-    const fetchPreseleccion = async () => {
-      try {
-        const response = await fetch('https://uasdapi.ia3x.com/ver_preseleccion', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
-        if (data.success && Array.isArray(data.data)) {
-          setPreseleccion(data.data);
-        }
-      } catch (error) {
-        Alert.alert('Error', 'No se pudieron cargar los eventos.');
-      } finally {
-        setLoading(false);
+  const mapRef = useRef<MapView>(null);
+  
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchPreseleccion();
+    }, [])
+  );
+
+  const fetchPreseleccion = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('https://uasdapi.ia3x.com/ver_preseleccion', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      if (data.success && Array.isArray(data.data)) {
+        setPreseleccion(data.data);
       }
-    };
-
-    fetchPreseleccion();
-  }, [authToken]);
-
-  // Función para renderizar cada item de la lista
-  const renderPreseleccion = ({ item }: { item: any }) => {
-    return (
-      <View style={styles.eventoCard} onTouchEnd={() => setSelectedPreseleccion(item)}>
-        <Text style={styles.titulo}>{item.nombre}</Text>
-        <Text style={styles.descripcion}>Aula: {item.aula}</Text>
-        <Text style={styles.lugar}>{item.ubicacion}</Text>
-      </View>
-    );
+    } catch (error) {
+      Alert.alert('Error', 'No se pudieron cargar los datos.');
+    } finally {
+      setLoading(false);
+    }
   };
+  
+  const handleSelectPreseleccion = (item: any) => {
+    setSelectedPreseleccion(item);
+
+    // Si hay un mapa visible, navega automáticamente al aula seleccionada
+    if (mapRef.current) {
+      const [latitude, longitude] = item.ubicacion.split(',').map(Number);
+      mapRef.current.animateToRegion(
+        {
+          latitude,
+          longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        1000 // Duración de la animación en milisegundos
+      );
+    }
+  };
+
+  const renderPreseleccion = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={styles.eventoCard}
+      onPress={() => handleSelectPreseleccion(item)}
+    >
+      <Text style={styles.titulo}>{item.nombre}</Text>
+      <Text style={styles.descripcion}>Aula: {item.aula}</Text>
+      <Text style={styles.lugar}>{item.ubicacion}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
-      <Button
-        title="Ir a Preseleccionar Materia"
+      <TouchableOpacity
+        style={styles.crearButton}
         onPress={() => navigation.navigate('PreseleccionarMateria' as never)}
-      />
+      >
+        <Text style={styles.crearButtonText}>Ir a Preseleccionar Materia</Text>
+      </TouchableOpacity>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
-
         <>
-
           <FlatList
             data={preseleccion}
             renderItem={renderPreseleccion}
             keyExtractor={(item) => item.codigo}
           />
           {selectedPreseleccion && (
-            <>
-              <View style={styles.mapContainer}>
-                <Text style={styles.mapTitle}>Ubicación de: {selectedPreseleccion.nombre}</Text>
-                <MapView
-                  style={styles.map}
-                  initialRegion={{
+            <View style={styles.mapContainer}>
+              <Text style={styles.mapTitle}>
+                Ubicación de: {selectedPreseleccion.nombre}
+              </Text>
+              <MapView
+                ref={mapRef}
+                style={styles.map}
+                initialRegion={{
+                  latitude: parseFloat(selectedPreseleccion.ubicacion.split(',')[0]),
+                  longitude: parseFloat(selectedPreseleccion.ubicacion.split(',')[1]),
+                  latitudeDelta: 0.0922,
+                  longitudeDelta: 0.0421,
+                }}
+              >
+                <Marker
+                  coordinate={{
                     latitude: parseFloat(selectedPreseleccion.ubicacion.split(',')[0]),
                     longitude: parseFloat(selectedPreseleccion.ubicacion.split(',')[1]),
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
                   }}
-                >
-                  <Marker
-                    coordinate={{
-                      latitude: parseFloat(selectedPreseleccion.ubicacion.split(',')[0]),
-                      longitude: parseFloat(selectedPreseleccion.ubicacion.split(',')[1]),
-                    }}
-                    title={selectedPreseleccion.nombre}
-                    description={selectedPreseleccion.aula}
-                  />
-                </MapView>
-              </View>
-            </>
+                  title={selectedPreseleccion.nombre}
+                  description={selectedPreseleccion.aula}
+                />
+              </MapView>
+            </View>
           )}
         </>
       )}
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -136,6 +166,17 @@ const styles = StyleSheet.create({
   map: {
     width: '100%',
     height: '100%',
+  },  crearButton: {
+    padding: 15,
+    marginBottom: 15,
+    backgroundColor: '#007bff',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  crearButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

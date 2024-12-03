@@ -29,6 +29,7 @@ const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();  // Creamos el Stack Navigator
 import * as Notifications from 'expo-notifications';
 import { Alert } from 'react-native';
+import CrearSolicitudes from './CrearSolicitudes';
 
 // var isLogged: boolean = false;
 SplashScreen.preventAutoHideAsync();
@@ -57,7 +58,7 @@ function AppNavigator() {
         Alert.alert('Permiso denegado', 'No se pueden mostrar notificaciones sin permisos.');
       }
     };
-  
+
     obtenerPermisos();
   }, []);
 
@@ -110,6 +111,13 @@ function AppNavigator() {
           <Drawer.Screen name="PreseleccionarMateria"
             component={PreseleccionarMateria}
             options={{
+              title: 'Preseleccionar Materias',
+              drawerItemStyle: { display: 'none' },
+            }} />
+          <Drawer.Screen name="CrearSolicitudes"
+            component={CrearSolicitudes}
+            options={{
+              title: 'Crear Solicitudes',
               drawerItemStyle: { display: 'none' },
             }} />
           <Drawer.Screen
