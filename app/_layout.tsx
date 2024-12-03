@@ -1,10 +1,12 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { createDrawerNavigator } from '@react-navigation/drawer'; // Usando createDrawerNavigator directamente
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createStackNavigator } from '@react-navigation/stack'; // Importamos StackNavigator
 
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -17,18 +19,52 @@ import MisTareas from './Mis Tareas';
 import Eventos from './Eventos';
 import Videos from './Videos';
 import Acercade from './Acerca de';
-import Salir from './Salir';
+import SalirScreen from './Salir';
 import Home from './Home';
 import Login from './Login';
+import Registrate from './Registrate';
+import { AuthProvider, useAuth } from './AuthContext';
+import PreseleccionarMateria from './PreseleccionarMateria';
 const Drawer = createDrawerNavigator();
-var isLogged: boolean = true;
+const Stack = createStackNavigator();  // Creamos el Stack Navigator
+import * as Notifications from 'expo-notifications';
+import { Alert } from 'react-native';
+import CrearSolicitudes from './CrearSolicitudes';
+
+// var isLogged: boolean = false;
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppNavigator />
+    </AuthProvider>
+  );
+};
+
+
+function AppNavigator() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+
+  const { isLogged, checkSession } = useAuth();
+
+  useEffect(() => {
+    const obtenerPermisos = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'No se pueden mostrar notificaciones sin permisos.');
+      }
+    };
+
+    obtenerPermisos();
+  }, []);
+
+  useEffect(() => {
+    checkSession();  // Verificar si hay sesión cuando la app se monta
+  }, []);
 
   useEffect(() => {
     if (loaded) {
@@ -50,7 +86,7 @@ export default function RootLayout() {
             options={{
               title: 'Home',
             }}
-          />          
+          />
           <Drawer.Screen
             name="Noticias"
             component={Noticias}
@@ -72,6 +108,18 @@ export default function RootLayout() {
               title: 'Preselección',
             }}
           />
+          <Drawer.Screen name="PreseleccionarMateria"
+            component={PreseleccionarMateria}
+            options={{
+              title: 'Preseleccionar Materias',
+              drawerItemStyle: { display: 'none' },
+            }} />
+          <Drawer.Screen name="CrearSolicitudes"
+            component={CrearSolicitudes}
+            options={{
+              title: 'Crear Solicitudes',
+              drawerItemStyle: { display: 'none' },
+            }} />
           <Drawer.Screen
             name="Deuda"
             component={Deuda}
@@ -116,31 +164,21 @@ export default function RootLayout() {
           />
           <Drawer.Screen
             name="Salir"
-            component={Salir}
+            component={SalirScreen}
             options={{
               title: 'Salir',
             }}
           />
         </Drawer.Navigator>
       ) : (
-        <Drawer.Navigator>
-          <Drawer.Screen
-            name="Home"
-            component={Home}
-            options={{
-              title: 'Home',
-            }}
-          />
-          <Drawer.Screen
-            name="Login"
-            component={Login}
-            options={{
-              title: 'Login',
-            }}
-          />
-        </Drawer.Navigator>
+        <Stack.Navigator>
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Registrate" component={Registrate} />
+        </Stack.Navigator>
       )}
       <StatusBar style="auto" />
     </ThemeProvider>
   );
 }
+
+export default App;
