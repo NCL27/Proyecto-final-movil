@@ -1828,10 +1828,10 @@
   dependencies:
     merge-options "^3.0.4"
 
-"@react-native-picker/picker@^2.10.1":
-  version "2.10.1"
-  resolved "https://registry.npmjs.org/@react-native-picker/picker/-/picker-2.10.1.tgz"
-  integrity sha512-OOcvPl+JrvobwjNREO1A9gxc+5mD74gp2ZcUJf/wcKtgNByS6XBxwiOwaCRvVbIcb6NQN06bMVVqjJEA0X+Tlg==
+"@react-native-picker/picker@^2.10.2":
+  version "2.10.2"
+  resolved "https://registry.npmjs.org/@react-native-picker/picker/-/picker-2.10.2.tgz"
+  integrity sha512-kr3OvCRwTYjR/OKlb52k4xmQVU7dPRIALqpyiihexdJxEgvc1smnepgqCeM9oXmNSG4YaV5/RSxFlLC5Z/T/Eg==
 
 "@react-native/assets-registry@0.76.3":
   version "0.76.3"
